@@ -1,14 +1,22 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   CheckCircle2,
   Clock3,
   Leaf,
+  LogOut,
   Menu,
   MapPin,
+  Mail,
+  MessageCircle,
   Phone,
+  Share2,
+  ShieldCheck,
   Sparkles,
   UserRound,
+  UsersRound,
   X,
 } from 'lucide-react';
 import heroImage from './assets/spa-hero.png';
@@ -33,12 +41,71 @@ type BookingResponse = {
   booking: {
     id: string;
     date: string;
+    status: 'pending' | 'confirmed';
   };
   summary: {
     serviceName: string;
     slotLabel: string;
     therapist: string;
   };
+};
+
+type AdminBooking = {
+  id: string;
+  serviceId: string;
+  date: string;
+  slotId: string;
+  customerName: string;
+  phone: string;
+  email: string;
+  gender: string;
+  notes: string;
+  status: 'pending' | 'confirmed';
+  createdAt: string;
+  confirmedAt?: string;
+  summary: {
+    serviceName: string;
+    slotLabel: string;
+    therapist: string;
+  };
+};
+
+type AdminLoginResponse = {
+  token: string;
+  admin: {
+    email: string;
+  };
+};
+
+type AdminLead = {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  gender: string;
+  totalBookings: number;
+  lastBookingDate: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type Pagination = {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+};
+
+type Toast = {
+  message: string;
+  type: 'success' | 'error' | 'info';
+};
+
+const defaultPagination: Pagination = {
+  page: 1,
+  pageSize: 10,
+  total: 0,
+  totalPages: 1,
 };
 
 const fallbackServices: SpaService[] = [
@@ -78,6 +145,35 @@ const fallbackSlots: TimeSlot[] = [
 
 const defaultSlot = fallbackSlots[0] as TimeSlot;
 const apiBaseUrl = 'http://127.0.0.1:5000';
+const contactPhone = '9626847595';
+const contactEmail = 'priya06kavi04@gmail.com';
+const whatsappLink = `https://wa.me/91${contactPhone}`;
+
+const normalizeWhatsappPhone = (phoneNumber: string) => {
+  const digits = phoneNumber.replace(/\D/g, '');
+  return digits.startsWith('91') ? digits : `91${digits}`;
+};
+
+const buildAppointmentLetter = (booking: AdminBooking) =>
+  [
+    'Kavi Dall Spa - Appointment Confirmation',
+    '',
+    `Booking ID: ${booking.id}`,
+    `Customer: ${booking.customerName}`,
+    `Service: ${booking.summary.serviceName}`,
+    `Date: ${booking.date}`,
+    `Time: ${booking.summary.slotLabel}`,
+    `Therapist: ${booking.summary.therapist}`,
+    `Status: ${booking.status.toUpperCase()}`,
+    '',
+    'Your appointment is confirmed. Please arrive 10 minutes before your scheduled time.',
+    `Contact: +91 ${contactPhone}`,
+  ].join('\n');
+
+const getAppointmentShareUrl = (booking: AdminBooking) =>
+  `https://wa.me/${normalizeWhatsappPhone(booking.phone)}?text=${encodeURIComponent(
+    buildAppointmentLetter(booking),
+  )}`;
 
 const openingHours = [
   ['Monday', '9:00 AM - 8:30 PM'],
@@ -112,7 +208,7 @@ const getDateOptions = () =>
   });
 
 export function App() {
-  const [activeView, setActiveView] = useState<'home' | 'gallery'>('home');
+  const [activeView, setActiveView] = useState<'home' | 'gallery' | 'admin'>('home');
   const dateOptions = useMemo(() => getDateOptions(), []);
   const defaultDate = dateOptions[0];
   const [services, setServices] = useState<SpaService[]>(fallbackServices);
@@ -122,6 +218,7 @@ export function App() {
   const [selectedSlotId, setSelectedSlotId] = useState(defaultSlot.id);
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [gender, setGender] = useState('');
   const [notes, setNotes] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -129,8 +226,43 @@ export function App() {
   const [isBooking, setIsBooking] = useState(false);
   const [message, setMessage] = useState('');
   const [confirmation, setConfirmation] = useState<BookingResponse | null>(null);
+  const [adminEmail, setAdminEmail] = useState(contactEmail);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminToken, setAdminToken] = useState(() => localStorage.getItem('kavi-admin-token') ?? '');
+  const [adminTab, setAdminTab] = useState<'appointments' | 'leads'>('appointments');
+  const [adminBookings, setAdminBookings] = useState<AdminBooking[]>([]);
+  const [adminLeads, setAdminLeads] = useState<AdminLead[]>([]);
+  const [bookingPagination, setBookingPagination] = useState<Pagination>(defaultPagination);
+  const [leadPagination, setLeadPagination] = useState<Pagination>(defaultPagination);
+  const [bookingFilterDate, setBookingFilterDate] = useState('');
+  const [adminMessage, setAdminMessage] = useState('');
+  const [isAdminLoading, setIsAdminLoading] = useState(false);
+  const [confirmingBookingId, setConfirmingBookingId] = useState('');
+  const [toast, setToast] = useState<Toast | null>(null);
 
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId);
+
+  const showToast = (message: string, type: Toast['type'] = 'success') => {
+    setToast({ message, type });
+    window.setTimeout(() => setToast(null), 3200);
+  };
+
+  const toastElement = toast ? (
+    <div className="fixed right-4 top-20 z-50 max-w-sm rounded-lg border border-[#A5CF83]/35 bg-white px-4 py-3 text-sm font-bold text-[#263a20] shadow-[0_18px_50px_rgba(95,142,67,0.2)]">
+      <div className="flex items-start gap-3">
+        <span
+          className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
+            toast.type === 'error'
+              ? 'bg-[#B42318]'
+              : toast.type === 'info'
+                ? 'bg-[#5F8E43]'
+                : 'bg-[#A5CF83]'
+          }`}
+        />
+        <p>{toast.message}</p>
+      </div>
+    </div>
+  ) : null;
 
   useEffect(() => {
     const loadServices = async () => {
@@ -175,11 +307,13 @@ export function App() {
 
     if (!selectedSlotId) {
       setMessage('Please choose an available time slot.');
+      showToast('Please choose an available time slot.', 'error');
       return;
     }
 
     if (!acceptedTerms) {
       setMessage('Please accept the booking confirmation terms.');
+      showToast('Please accept the booking confirmation terms.', 'error');
       return;
     }
 
@@ -195,6 +329,7 @@ export function App() {
           slotId: selectedSlotId,
           customerName,
           phone,
+          email,
           gender,
           notes,
         }),
@@ -204,17 +339,21 @@ export function App() {
 
       if (!response.ok || 'message' in data) {
         setMessage('message' in data ? data.message : 'Booking failed. Please try again.');
+        showToast('message' in data ? data.message : 'Booking failed. Please try again.', 'error');
         return;
       }
 
       setConfirmation(data);
+      showToast('Appointment booking confirmed successfully.', 'success');
       setCustomerName('');
       setPhone('');
+      setEmail('');
       setGender('');
       setNotes('');
       setAcceptedTerms(false);
     } catch {
       setMessage('Backend is not reachable. Start backend server and try again.');
+      showToast('Backend is not reachable. Start backend server and try again.', 'error');
     } finally {
       setIsBooking(false);
     }
@@ -236,12 +375,545 @@ export function App() {
     setIsMobileMenuOpen(false);
   };
 
+  const openAdmin = () => {
+    setActiveView('admin');
+    setIsMobileMenuOpen(false);
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 0);
+  };
+
+  const loadAdminBookings = async (
+    token = adminToken,
+    page = bookingPagination.page,
+    date = bookingFilterDate,
+  ) => {
+    if (!token) {
+      return;
+    }
+
+    setIsAdminLoading(true);
+    setAdminMessage('');
+
+    try {
+      const query = new URLSearchParams({
+        page: String(page),
+        pageSize: String(bookingPagination.pageSize),
+      });
+
+      if (date) {
+        query.set('date', date);
+      }
+
+      const response = await fetch(`${apiBaseUrl}/api/bookings?${query.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = (await response.json()) as {
+        bookings: AdminBooking[];
+        pagination: Pagination;
+        message?: string;
+      };
+
+      if (!response.ok) {
+        setAdminMessage(data.message ?? 'Unable to load appointments.');
+        showToast(data.message ?? 'Unable to load appointments.', 'error');
+        return;
+      }
+
+      setAdminBookings(data.bookings);
+      setBookingPagination(data.pagination);
+    } catch {
+      setAdminMessage('Backend is not reachable. Start backend server and try again.');
+      showToast('Backend is not reachable. Start backend server and try again.', 'error');
+    } finally {
+      setIsAdminLoading(false);
+    }
+  };
+
+  const loadAdminLeads = async (token = adminToken, page = leadPagination.page) => {
+    if (!token) {
+      return;
+    }
+
+    setIsAdminLoading(true);
+    setAdminMessage('');
+
+    try {
+      const query = new URLSearchParams({
+        page: String(page),
+        pageSize: String(leadPagination.pageSize),
+      });
+      const response = await fetch(`${apiBaseUrl}/api/leads?${query.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = (await response.json()) as {
+        leads: AdminLead[];
+        pagination: Pagination;
+        message?: string;
+      };
+
+      if (!response.ok) {
+        setAdminMessage(data.message ?? 'Unable to load leads.');
+        showToast(data.message ?? 'Unable to load leads.', 'error');
+        return;
+      }
+
+      setAdminLeads(data.leads);
+      setLeadPagination(data.pagination);
+    } catch {
+      setAdminMessage('Backend is not reachable. Start backend server and try again.');
+      showToast('Backend is not reachable. Start backend server and try again.', 'error');
+    } finally {
+      setIsAdminLoading(false);
+    }
+  };
+
+  const handleAdminLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsAdminLoading(true);
+    setAdminMessage('');
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: adminEmail, password: adminPassword }),
+      });
+      const data = (await response.json()) as AdminLoginResponse | { message: string };
+
+      if (!response.ok || 'message' in data) {
+        setAdminMessage('message' in data ? data.message : 'Admin login failed.');
+        showToast('message' in data ? data.message : 'Admin login failed.', 'error');
+        return;
+      }
+
+      localStorage.setItem('kavi-admin-token', data.token);
+      setAdminToken(data.token);
+      setAdminPassword('');
+      showToast('Admin login successful.', 'success');
+      await loadAdminBookings(data.token);
+      await loadAdminLeads(data.token, 1);
+    } catch {
+      setAdminMessage('Backend is not reachable. Start backend server and try again.');
+      showToast('Backend is not reachable. Start backend server and try again.', 'error');
+    } finally {
+      setIsAdminLoading(false);
+    }
+  };
+
+  const handleAdminLogout = () => {
+    localStorage.removeItem('kavi-admin-token');
+    setAdminToken('');
+    setAdminBookings([]);
+    setAdminLeads([]);
+    setBookingPagination(defaultPagination);
+    setLeadPagination(defaultPagination);
+    setAdminPassword('');
+    setAdminMessage('');
+    showToast('Admin logged out.', 'info');
+  };
+
+  const handleConfirmBooking = async (bookingId: string) => {
+    setConfirmingBookingId(bookingId);
+    setAdminMessage('');
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/bookings/${bookingId}/confirm`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${adminToken}` },
+      });
+      const data = (await response.json()) as { booking: AdminBooking; message?: string };
+
+      if (!response.ok) {
+        setAdminMessage(data.message ?? 'Unable to confirm appointment.');
+        showToast(data.message ?? 'Unable to confirm appointment.', 'error');
+        return;
+      }
+
+      setAdminBookings((bookings) =>
+        bookings.map((booking) => (booking.id === bookingId ? data.booking : booking)),
+      );
+      setAdminMessage('Appointment confirmed. Email and WhatsApp notifications were triggered.');
+      showToast('Appointment confirmed. You can share it on WhatsApp now.', 'success');
+    } catch {
+      setAdminMessage('Backend is not reachable. Start backend server and try again.');
+      showToast('Backend is not reachable. Start backend server and try again.', 'error');
+    } finally {
+      setConfirmingBookingId('');
+    }
+  };
+
+  const handleBookingFilter = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    showToast(bookingFilterDate ? 'Date filter applied.' : 'Showing all appointment dates.', 'info');
+    void loadAdminBookings(adminToken, 1, bookingFilterDate);
+  };
+
+  const clearBookingFilter = () => {
+    setBookingFilterDate('');
+    showToast('Date filter cleared.', 'info');
+    void loadAdminBookings(adminToken, 1, '');
+  };
+
+  const changeBookingPage = (page: number) => {
+    void loadAdminBookings(adminToken, page, bookingFilterDate);
+  };
+
+  const changeLeadPage = (page: number) => {
+    void loadAdminLeads(adminToken, page);
+  };
+
+  const shareAppointmentOnWhatsapp = (booking: AdminBooking) => {
+    window.open(getAppointmentShareUrl(booking), '_blank', 'noopener,noreferrer');
+    showToast('WhatsApp share opened with the appointment letter.', 'success');
+  };
+
+  useEffect(() => {
+    if (activeView === 'admin' && adminToken) {
+      if (adminTab === 'appointments') {
+        void loadAdminBookings();
+      } else {
+        void loadAdminLeads();
+      }
+    }
+  }, [activeView, adminToken, adminTab]);
+
   if (activeView === 'gallery') {
     return <Gallery onBack={openHome} />;
   }
 
+  if (activeView === 'admin') {
+    return (
+      <main className="min-h-screen bg-[#F8FFF3] text-[#162312]">
+        {toastElement}
+        <nav className="sticky top-0 z-30 border-b border-[#A5CF83]/30 bg-[#FBFFF7]/92 backdrop-blur-xl">
+          <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-5">
+            <button
+              className="flex items-center gap-2 font-display text-2xl font-semibold"
+              onClick={openHome}
+              type="button"
+            >
+              <Leaf className="h-6 w-6 text-[#A5CF83]" />
+              Kavi Dall
+            </button>
+            {adminToken ? (
+              <button
+                className="flex items-center gap-2 rounded-full border border-[#A5CF83]/40 bg-white px-4 py-2 text-sm font-bold text-[#304628] transition hover:bg-[#F2FBEA]"
+                onClick={handleAdminLogout}
+                type="button"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </button>
+            ) : null}
+          </div>
+        </nav>
+
+        <section className="bg-[linear-gradient(135deg,#F8FFF3_0%,#EEF8E8_52%,#DCEFCF_100%)] py-12 sm:py-16">
+          <div className="mx-auto max-w-7xl px-5">
+            <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+              <div>
+                <p className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.38em] text-[#5F8E43]">
+                  <ShieldCheck className="h-4 w-4" />
+                  Admin
+                </p>
+                <h1 className="mt-3 font-display text-4xl font-semibold sm:text-5xl">
+                  Appointment Monitor
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm leading-7 text-[#304628]/75">
+                  Login, review customer bookings, and confirm appointments. Confirmation triggers
+                  email and WhatsApp notification from the backend when provider keys are configured.
+                </p>
+              </div>
+              {adminToken ? (
+                <button
+                  className="rounded-full bg-gradient-to-r from-[#A5CF83] via-[#CFEAB7] to-[#F0FFE6] px-5 py-3 text-xs font-black uppercase text-[#10240c] shadow-[0_14px_35px_rgba(165,207,131,0.24)]"
+                  onClick={() => {
+                    if (adminTab === 'appointments') {
+                      void loadAdminBookings();
+                    } else {
+                      void loadAdminLeads();
+                    }
+                  }}
+                  type="button"
+                >
+                  Refresh
+                </button>
+              ) : null}
+            </div>
+
+            {!adminToken ? (
+              <form
+                className="mt-10 max-w-xl rounded-lg border border-[#A5CF83]/30 bg-white/92 p-6 shadow-[0_24px_70px_rgba(95,142,67,0.14)]"
+                onSubmit={(event) => {
+                  void handleAdminLogin(event);
+                }}
+              >
+                <label className="text-xs font-bold text-[#263a20]">
+                  Admin Email
+                  <input
+                    className="mt-2 w-full rounded-md border border-[#A5CF83]/50 bg-[#F8FFF3] px-4 py-3 text-sm outline-none focus:border-[#5F8E43] focus:ring-2 focus:ring-[#A5CF83]/30"
+                    onChange={(event) => setAdminEmail(event.target.value)}
+                    type="email"
+                    value={adminEmail}
+                  />
+                </label>
+                <label className="mt-5 block text-xs font-bold text-[#263a20]">
+                  Password
+                  <input
+                    className="mt-2 w-full rounded-md border border-[#A5CF83]/50 bg-[#F8FFF3] px-4 py-3 text-sm outline-none focus:border-[#5F8E43] focus:ring-2 focus:ring-[#A5CF83]/30"
+                    onChange={(event) => setAdminPassword(event.target.value)}
+                    type="password"
+                    value={adminPassword}
+                  />
+                </label>
+                <button
+                  className="mt-6 rounded-full bg-gradient-to-r from-[#A5CF83] via-[#CFEAB7] to-[#F0FFE6] px-7 py-3 text-xs font-black uppercase text-[#10240c] disabled:opacity-70"
+                  disabled={isAdminLoading}
+                  type="submit"
+                >
+                  {isAdminLoading ? 'Signing in...' : 'Login'}
+                </button>
+              </form>
+            ) : (
+              <div className="mt-10">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black uppercase ${
+                      adminTab === 'appointments'
+                        ? 'bg-[#A5CF83] text-[#10240c]'
+                        : 'border border-[#A5CF83]/35 bg-white text-[#304628]'
+                    }`}
+                    onClick={() => setAdminTab('appointments')}
+                    type="button"
+                  >
+                    <CalendarDays className="h-4 w-4" />
+                    Appointments
+                  </button>
+                  <button
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black uppercase ${
+                      adminTab === 'leads'
+                        ? 'bg-[#A5CF83] text-[#10240c]'
+                        : 'border border-[#A5CF83]/35 bg-white text-[#304628]'
+                    }`}
+                    onClick={() => setAdminTab('leads')}
+                    type="button"
+                  >
+                    <UsersRound className="h-4 w-4" />
+                    Leads
+                  </button>
+                </div>
+
+                {adminTab === 'appointments' ? (
+                  <>
+                    <form
+                      className="mt-5 flex flex-col gap-3 rounded-lg border border-[#A5CF83]/25 bg-white/88 p-4 sm:flex-row sm:items-end"
+                      onSubmit={handleBookingFilter}
+                    >
+                      <label className="text-xs font-bold text-[#263a20]">
+                        Date Filter
+                        <input
+                          className="mt-2 w-full rounded-md border border-[#A5CF83]/50 bg-[#F8FFF3] px-4 py-3 text-sm outline-none focus:border-[#5F8E43] sm:w-56"
+                          onChange={(event) => setBookingFilterDate(event.target.value)}
+                          type="date"
+                          value={bookingFilterDate}
+                        />
+                      </label>
+                      <button
+                        className="rounded-full bg-[#A5CF83] px-5 py-3 text-xs font-black uppercase text-[#10240c]"
+                        type="submit"
+                      >
+                        Apply
+                      </button>
+                      <button
+                        className="rounded-full border border-[#A5CF83]/40 bg-white px-5 py-3 text-xs font-black uppercase text-[#304628]"
+                        onClick={clearBookingFilter}
+                        type="button"
+                      >
+                        Clear
+                      </button>
+                      <p className="text-xs font-semibold text-[#304628]/65 sm:ml-auto">
+                        {bookingPagination.total} appointment records
+                      </p>
+                    </form>
+
+                    <div className="mt-5 overflow-hidden rounded-lg border border-[#A5CF83]/25 bg-white/92 shadow-[0_24px_70px_rgba(95,142,67,0.14)]">
+                      <div className="grid gap-4 border-b border-[#A5CF83]/20 bg-[#F2FBEA] px-4 py-3 text-xs font-black uppercase text-[#5F8E43] md:grid-cols-[1.2fr_1fr_1fr_0.8fr_0.8fr]">
+                        <span>Customer</span>
+                        <span>Appointment</span>
+                        <span>Contact</span>
+                        <span>Status</span>
+                        <span>Action</span>
+                      </div>
+                      {adminBookings.length === 0 ? (
+                        <p className="p-5 text-sm text-[#304628]/70">
+                          {isAdminLoading ? 'Loading appointments...' : 'No appointments found.'}
+                        </p>
+                      ) : (
+                        adminBookings.map((booking) => (
+                          <article
+                            className="grid gap-4 border-b border-[#A5CF83]/15 px-4 py-4 text-sm last:border-b-0 md:grid-cols-[1.2fr_1fr_1fr_0.8fr_0.8fr]"
+                            key={booking.id}
+                          >
+                            <div>
+                              <p className="font-black text-[#263a20]">{booking.customerName}</p>
+                              <p className="mt-1 text-xs text-[#304628]/65">{booking.id}</p>
+                            </div>
+                            <div>
+                              <p className="font-bold text-[#263a20]">
+                                {booking.summary.serviceName}
+                              </p>
+                              <p className="mt-1 text-xs text-[#304628]/65">
+                                {booking.date} at {booking.summary.slotLabel}
+                              </p>
+                            </div>
+                            <div className="break-words text-xs leading-5 text-[#304628]/75">
+                              <p>{booking.phone}</p>
+                              <p>{booking.email}</p>
+                            </div>
+                            <span
+                              className={`h-fit w-fit rounded-full px-3 py-1 text-xs font-black uppercase ${
+                                booking.status === 'confirmed'
+                                  ? 'bg-[#A5CF83]/25 text-[#315226]'
+                                  : 'bg-[#fff7d6] text-[#765600]'
+                              }`}
+                            >
+                              {booking.status}
+                            </span>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                className="h-fit rounded-full bg-[#A5CF83] px-4 py-2 text-xs font-black uppercase text-[#10240c] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
+                                disabled={
+                                  booking.status === 'confirmed' ||
+                                  confirmingBookingId === booking.id
+                                }
+                                onClick={() => {
+                                  void handleConfirmBooking(booking.id);
+                                }}
+                                type="button"
+                              >
+                                {confirmingBookingId === booking.id ? 'Sending...' : 'Confirm'}
+                              </button>
+                              <button
+                                className="flex h-fit items-center gap-1 rounded-full border border-[#A5CF83]/50 bg-white px-4 py-2 text-xs font-black uppercase text-[#315226] transition hover:bg-[#F2FBEA] disabled:cursor-not-allowed disabled:opacity-45"
+                                disabled={booking.status !== 'confirmed'}
+                                onClick={() => shareAppointmentOnWhatsapp(booking)}
+                                type="button"
+                              >
+                                <Share2 className="h-3.5 w-3.5" />
+                                Share
+                              </button>
+                            </div>
+                          </article>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-[#A5CF83]/25 bg-white/82 p-3 text-sm text-[#304628]">
+                      <button
+                        className="flex items-center gap-1 rounded-full border border-[#A5CF83]/40 px-3 py-2 font-bold disabled:opacity-40"
+                        disabled={bookingPagination.page <= 1}
+                        onClick={() => changeBookingPage(bookingPagination.page - 1)}
+                        type="button"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Prev
+                      </button>
+                      <span className="text-xs font-black uppercase">
+                        Page {bookingPagination.page} of {bookingPagination.totalPages}
+                      </span>
+                      <button
+                        className="flex items-center gap-1 rounded-full border border-[#A5CF83]/40 px-3 py-2 font-bold disabled:opacity-40"
+                        disabled={bookingPagination.page >= bookingPagination.totalPages}
+                        onClick={() => changeBookingPage(bookingPagination.page + 1)}
+                        type="button"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="mt-5 rounded-lg border border-[#A5CF83]/25 bg-white/88 p-4">
+                      <p className="text-xs font-semibold text-[#304628]/65">
+                        {leadPagination.total} leads maintained separately from appointments
+                      </p>
+                    </div>
+                    <div className="mt-5 overflow-hidden rounded-lg border border-[#A5CF83]/25 bg-white/92 shadow-[0_24px_70px_rgba(95,142,67,0.14)]">
+                      <div className="grid gap-4 border-b border-[#A5CF83]/20 bg-[#F2FBEA] px-4 py-3 text-xs font-black uppercase text-[#5F8E43] md:grid-cols-[1.2fr_1fr_0.8fr_0.8fr]">
+                        <span>Lead</span>
+                        <span>Contact</span>
+                        <span>Bookings</span>
+                        <span>Last Visit</span>
+                      </div>
+                      {adminLeads.length === 0 ? (
+                        <p className="p-5 text-sm text-[#304628]/70">
+                          {isAdminLoading ? 'Loading leads...' : 'No leads found.'}
+                        </p>
+                      ) : (
+                        adminLeads.map((lead) => (
+                          <article
+                            className="grid gap-4 border-b border-[#A5CF83]/15 px-4 py-4 text-sm last:border-b-0 md:grid-cols-[1.2fr_1fr_0.8fr_0.8fr]"
+                            key={lead.id}
+                          >
+                            <div>
+                              <p className="font-black text-[#263a20]">{lead.name}</p>
+                              <p className="mt-1 text-xs text-[#304628]/65">{lead.id}</p>
+                            </div>
+                            <div className="break-words text-xs leading-5 text-[#304628]/75">
+                              <p>{lead.phone}</p>
+                              <p>{lead.email}</p>
+                            </div>
+                            <p className="font-black text-[#315226]">{lead.totalBookings}</p>
+                            <p className="text-xs font-semibold text-[#304628]/70">
+                              {lead.lastBookingDate}
+                            </p>
+                          </article>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-[#A5CF83]/25 bg-white/82 p-3 text-sm text-[#304628]">
+                      <button
+                        className="flex items-center gap-1 rounded-full border border-[#A5CF83]/40 px-3 py-2 font-bold disabled:opacity-40"
+                        disabled={leadPagination.page <= 1}
+                        onClick={() => changeLeadPage(leadPagination.page - 1)}
+                        type="button"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Prev
+                      </button>
+                      <span className="text-xs font-black uppercase">
+                        Page {leadPagination.page} of {leadPagination.totalPages}
+                      </span>
+                      <button
+                        className="flex items-center gap-1 rounded-full border border-[#A5CF83]/40 px-3 py-2 font-bold disabled:opacity-40"
+                        disabled={leadPagination.page >= leadPagination.totalPages}
+                        onClick={() => changeLeadPage(leadPagination.page + 1)}
+                        type="button"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {adminMessage ? (
+              <p className="mt-5 rounded-md border border-[#A5CF83]/40 bg-white p-3 text-sm text-[#304628]">
+                {adminMessage}
+              </p>
+            ) : null}
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#F8FFF3] text-[#162312]">
+      {toastElement}
       <nav className="sticky top-0 z-30 border-b border-[#A5CF83]/30 bg-[#FBFFF7]/92 backdrop-blur-xl">
         <div className="mx-auto flex min-h-16 max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
           <button
@@ -266,6 +938,9 @@ export function App() {
             </a>
             <button className="hover:text-[#A5CF83]" onClick={openGallery} type="button">
               Gallery
+            </button>
+            <button className="hover:text-[#A5CF83]" onClick={openAdmin} type="button">
+              Admin
             </button>
             <a className="hover:text-[#A5CF83]" href="#booking">
               Booking
@@ -311,6 +986,13 @@ export function App() {
                 type="button"
               >
                 Gallery
+              </button>
+              <button
+                className="block w-full rounded-md px-4 py-3 text-left text-sm font-black uppercase text-[#263a20] hover:bg-[#A5CF83]/14"
+                onClick={openAdmin}
+                type="button"
+              >
+                Admin
               </button>
               <a
                 className="block rounded-md px-4 py-3 text-sm font-black uppercase text-[#263a20] hover:bg-[#A5CF83]/14"
@@ -467,6 +1149,17 @@ export function App() {
                   required
                   type="tel"
                   value={phone}
+                />
+              </label>
+              <label className="text-xs font-bold text-[#263a20]">
+                Email Address *
+                <input
+                  className="mt-2 w-full rounded-md border border-[#A5CF83]/50 bg-[#F8FFF3] px-4 py-3 text-sm text-[#263a20] outline-none transition placeholder:text-[#809675] focus:border-[#5F8E43] focus:ring-2 focus:ring-[#A5CF83]/30"
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Enter email address"
+                  required
+                  type="email"
+                  value={email}
                 />
               </label>
               <label className="text-xs font-bold text-[#263a20]">
@@ -647,10 +1340,29 @@ export function App() {
                   <MapPin className="mt-1 h-4 w-4 shrink-0 text-[#5F8E43]" />
                   48, Thiru Nagar Street, Puducherry
                 </p>
-                <p className="mt-3 flex items-center gap-3 text-sm text-[#304628]/75">
+                <a
+                  className="mt-3 flex items-center gap-3 text-sm font-semibold text-[#304628]/75 transition hover:text-[#5F8E43]"
+                  href={`tel:+91${contactPhone}`}
+                >
                   <Phone className="h-4 w-4 text-[#5F8E43]" />
-                  +91 98765 43210
-                </p>
+                  +91 {contactPhone}
+                </a>
+                <a
+                  className="mt-3 flex items-center gap-3 text-sm font-semibold text-[#304628]/75 transition hover:text-[#5F8E43]"
+                  href={`mailto:${contactEmail}`}
+                >
+                  <Mail className="h-4 w-4 text-[#5F8E43]" />
+                  {contactEmail}
+                </a>
+                <a
+                  className="mt-3 flex items-center gap-3 text-sm font-semibold text-[#304628]/75 transition hover:text-[#5F8E43]"
+                  href={whatsappLink}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <MessageCircle className="h-4 w-4 text-[#5F8E43]" />
+                  WhatsApp +91 {contactPhone}
+                </a>
               </div>
               <div className="mt-8 rounded-md bg-[#A5CF83]/12 p-4">
                 <p className="text-sm text-[#304628]/75">

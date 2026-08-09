@@ -16,45 +16,75 @@ type GalleryProps = {
 
 const galleryItems = [
   {
-    title: 'Ocean calm suite',
+    title: 'Signature back massage',
     category: 'Treatment Room',
     image: galleryImage,
-    className: 'md:col-span-2 md:row-span-2',
-    position: 'object-left',
+    position: 'object-left-top',
   },
   {
-    title: 'Hydro ritual bowls',
-    category: 'Water Therapy',
+    title: 'Aroma oil therapy',
+    category: 'Therapies',
     image: galleryImage,
-    className: '',
-    position: 'object-right',
-  },
-  {
-    title: 'Pearl towel setup',
-    category: 'Service Detail',
-    image: galleryImage,
-    className: '',
-    position: 'object-bottom',
-  },
-  {
-    title: 'Private treatment room',
-    category: 'Signature Suite',
-    image: heroImage,
-    className: 'md:col-span-2',
     position: 'object-center',
   },
   {
-    title: 'Skincare essentials',
-    category: 'Products',
+    title: 'Candlelit body care',
+    category: 'Relaxation',
     image: galleryImage,
-    className: '',
+    position: 'object-right-top',
+  },
+  {
+    title: 'Floral spa ritual',
+    category: 'Premium',
+    image: heroImage,
+    position: 'object-center',
+  },
+  {
+    title: 'Glow facial care',
+    category: 'Healing',
+    image: galleryImage,
     position: 'object-top',
   },
   {
-    title: 'Aqua wellness textures',
-    category: 'Ambience',
+    title: 'Herbal massage oils',
+    category: 'Therapies',
     image: galleryImage,
-    className: '',
+    position: 'object-bottom',
+  },
+  {
+    title: 'Therapist care room',
+    category: 'Treatment Room',
+    image: heroImage,
+    position: 'object-left',
+  },
+  {
+    title: 'Deep relaxation',
+    category: 'Relaxation',
+    image: galleryImage,
+    position: 'object-right',
+  },
+  {
+    title: 'Pressure point massage',
+    category: 'Healing',
+    image: heroImage,
+    position: 'object-bottom',
+  },
+  {
+    title: 'Warm shoulder therapy',
+    category: 'Relaxation',
+    image: galleryImage,
+    position: 'object-left',
+  },
+  {
+    title: 'Lotus hand ritual',
+    category: 'Premium',
+    image: galleryImage,
+    position: 'object-center',
+  },
+  {
+    title: 'Full body oil therapy',
+    category: 'Therapies',
+    image: heroImage,
     position: 'object-center',
   },
 ];
@@ -77,7 +107,7 @@ const galleryHighlights = [
   },
 ];
 
-const filters = ['All', 'Treatment Room', 'Water Therapy', 'Products', 'Ambience'];
+const filters = ['All', 'Therapies', 'Relaxation', 'Healing', 'Premium'];
 
 export function Gallery({ onBack }: GalleryProps) {
   return (
@@ -120,8 +150,8 @@ export function Gallery({ onBack }: GalleryProps) {
             </div>
             <div className="rounded-lg border border-[#A5CF83]/25 bg-white/85 p-5 shadow-[0_28px_90px_rgba(95,142,67,0.14)] backdrop-blur-xl">
               <p className="text-sm leading-7 text-[#304628]/78">
-                A professional gallery experience for Kavi Dall with balanced image hierarchy, clean
-                hover states, and a polished green palette based on #A5CF83.
+                A professional gallery experience for Kavi Dall with a calm row-based photo pattern,
+                clean hover states, and a polished green palette based on #A5CF83.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 {filters.map((filter, index) => (
@@ -140,10 +170,10 @@ export function Gallery({ onBack }: GalleryProps) {
             </div>
           </div>
 
-          <div className="mt-10 grid auto-rows-[220px] gap-4 sm:mt-12 sm:auto-rows-[230px] md:grid-cols-4">
+          <div className="mt-10 grid gap-3 sm:mt-12 sm:grid-cols-2 md:grid-cols-4">
             {galleryItems.map((item) => (
               <article
-                className={`group relative overflow-hidden rounded-lg border border-[#A5CF83]/25 bg-white shadow-[0_26px_80px_rgba(95,142,67,0.16)] ${item.className}`}
+                className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-[#A5CF83]/25 bg-white shadow-[0_20px_58px_rgba(95,142,67,0.14)]"
                 key={item.title}
               >
                 <img
@@ -151,16 +181,16 @@ export function Gallery({ onBack }: GalleryProps) {
                   className={`h-full w-full object-cover ${item.position} transition duration-700 group-hover:scale-105`}
                   src={item.image}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#07110a]/78 via-[#07110a]/8 to-transparent opacity-90" />
-                <div className="absolute left-4 top-4 rounded-full border border-white/20 bg-white/15 px-3 py-1 text-[11px] font-black uppercase tracking-wide text-white backdrop-blur">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#F8FFF3]/84 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
+                <div className="absolute left-3 top-3 rounded-full border border-[#A5CF83]/40 bg-[#F8FFF3]/88 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-[#315226] opacity-0 backdrop-blur transition group-hover:opacity-100">
                   {item.category}
                 </div>
-                <div className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-[#F3FFE8] text-[#10240c] opacity-0 transition group-hover:opacity-100">
+                <div className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#F3FFE8] text-[#10240c] opacity-0 transition group-hover:opacity-100">
                   <Maximize2 className="h-4 w-4" />
                 </div>
-                <div className="absolute inset-x-0 bottom-0 p-5">
-                  <h2 className="text-xl font-black">{item.title}</h2>
-                  <p className="mt-1 text-sm text-[#f4fff0]/68">
+                <div className="absolute inset-x-0 bottom-0 bg-[#F8FFF3]/88 p-4 text-[#263a20] opacity-0 backdrop-blur transition group-hover:opacity-100">
+                  <h2 className="text-base font-black text-[#315226]">{item.title}</h2>
+                  <p className="mt-1 text-sm text-[#304628]/75">
                     Kavi Dall signature wellness atmosphere.
                   </p>
                 </div>
