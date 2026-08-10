@@ -110,6 +110,13 @@ const defaultPagination: Pagination = {
 
 const fallbackServices: SpaService[] = [
   {
+    id: 'glow-facial',
+    name: 'Glow Facial',
+    durationMinutes: 45,
+    price: 2499,
+    mood: 'Brightening cleanse and facial massage',
+  },
+  {
     id: 'aroma-therapy',
     name: 'Aroma Therapy',
     durationMinutes: 60,
@@ -144,7 +151,8 @@ const fallbackSlots: TimeSlot[] = [
 ];
 
 const defaultSlot = fallbackSlots[0] as TimeSlot;
-const apiBaseUrl = 'http://127.0.0.1:5000';
+const viteEnv = import.meta.env as { readonly VITE_API_BASE_URL?: string };
+const apiBaseUrl = viteEnv.VITE_API_BASE_URL ?? 'http://127.0.0.1:5000';
 const contactPhone = '9626847595';
 const contactEmail = 'priya06kavi04@gmail.com';
 const whatsappLink = `https://wa.me/91${contactPhone}`;
