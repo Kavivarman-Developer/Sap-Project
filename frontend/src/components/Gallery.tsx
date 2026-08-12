@@ -4,11 +4,21 @@ import {
   Camera,
   Droplets,
   Flower2,
-  Maximize2,
   Sparkles,
 } from 'lucide-react';
-import galleryImage from '../assets/spa-gallery.png';
-import heroImage from '../assets/spa-hero.png';
+// import spa13 from '../assets/spa-gallery.png';
+// import heroImage from '../assets/spa-hero.png';
+import spa1 from '../assets/spa1.jpg';
+import spa4 from '../assets/spa4.jpg';
+import spa5 from '../assets/spa5.jpg';
+import spa6 from '../assets/spa6.jpg';
+import spa8 from '../assets/spa8.jpg';
+import spa9 from '../assets/spa9.jpg';
+import spa10 from '../assets/spa10.jpg';
+import spa11 from '../assets/spa11.jpg';
+import spa12 from '../assets/spa12.jpg';
+import spa13 from '../assets/spa13.jpg';
+import spa14 from '../assets/spa14.jpg';
 
 type GalleryProps = {
   onBack: () => void;
@@ -18,73 +28,73 @@ const galleryItems = [
   {
     title: 'Signature back massage',
     category: 'Treatment Room',
-    image: galleryImage,
+    image: spa1,
     position: 'object-left-top',
   },
   {
     title: 'Aroma oil therapy',
     category: 'Therapies',
-    image: galleryImage,
+    image: spa4,
     position: 'object-center',
   },
   {
     title: 'Candlelit body care',
     category: 'Relaxation',
-    image: galleryImage,
+    image: spa5,
     position: 'object-right-top',
   },
   {
     title: 'Floral spa ritual',
     category: 'Premium',
-    image: heroImage,
+    image: spa6,
     position: 'object-center',
   },
   {
     title: 'Glow facial care',
     category: 'Healing',
-    image: galleryImage,
+    image: spa8,
     position: 'object-top',
   },
   {
     title: 'Herbal massage oils',
     category: 'Therapies',
-    image: galleryImage,
+    image: spa9,
     position: 'object-bottom',
   },
   {
     title: 'Therapist care room',
     category: 'Treatment Room',
-    image: heroImage,
+    image: spa10,
     position: 'object-left',
   },
   {
     title: 'Deep relaxation',
     category: 'Relaxation',
-    image: galleryImage,
+    image: spa11,
     position: 'object-right',
   },
   {
     title: 'Pressure point massage',
     category: 'Healing',
-    image: heroImage,
+    image: spa12,
     position: 'object-bottom',
   },
   {
     title: 'Warm shoulder therapy',
     category: 'Relaxation',
-    image: galleryImage,
+    image: spa13,
     position: 'object-left',
   },
   {
     title: 'Lotus hand ritual',
     category: 'Premium',
-    image: galleryImage,
+    image: spa14,
     position: 'object-center',
   },
   {
     title: 'Full body oil therapy',
     category: 'Therapies',
-    image: heroImage,
+    image: spa13,
     position: 'object-center',
   },
 ];
@@ -123,7 +133,7 @@ export function Gallery({ onBack }: GalleryProps) {
             Back
           </button>
           <p className="text-center font-display text-xl font-semibold text-[#A5CF83] sm:text-2xl">
-            Kavi Dall Gallery
+            New Golden Spa Gallery
           </p>
           <button
             className="rounded-full bg-gradient-to-r from-[#A5CF83] via-[#D8EDC5] to-[#F3FFE8] px-4 py-2.5 text-xs font-black uppercase text-[#10240c] shadow-[0_14px_35px_rgba(165,207,131,0.28)] transition hover:brightness-110 sm:px-5"
@@ -150,8 +160,8 @@ export function Gallery({ onBack }: GalleryProps) {
             </div>
             <div className="rounded-lg border border-[#A5CF83]/25 bg-white/85 p-5 shadow-[0_28px_90px_rgba(95,142,67,0.14)] backdrop-blur-xl">
               <p className="text-sm leading-7 text-[#304628]/78">
-                A professional gallery experience for Kavi Dall with a calm row-based photo pattern,
-                clean hover states, and a polished green palette based on #A5CF83.
+                A professional gallery experience for New Golden Spa with a calm row-based photo
+                pattern, clean hover states, and a polished green palette based on #A5CF83.
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 {filters.map((filter, index) => (
@@ -182,16 +192,13 @@ export function Gallery({ onBack }: GalleryProps) {
                   src={item.image}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#F8FFF3]/84 via-transparent to-transparent opacity-0 transition duration-300 group-hover:opacity-100" />
-                <div className="absolute left-3 top-3 rounded-full border border-[#A5CF83]/40 bg-[#F8FFF3]/88 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-[#315226] opacity-0 backdrop-blur transition group-hover:opacity-100">
+                <div className="absolute left-3 top-3 rounded-full border border-[#A5CF83]/40 bg-[#F8FFF3]/88 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-[#ffffff] opacity-0 backdrop-blur transition group-hover:opacity-100">
                   {item.category}
                 </div>
-                <div className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#F3FFE8] text-[#10240c] opacity-0 transition group-hover:opacity-100">
-                  <Maximize2 className="h-4 w-4" />
-                </div>
                 <div className="absolute inset-x-0 bottom-0 bg-[#F8FFF3]/88 p-4 text-[#263a20] opacity-0 backdrop-blur transition group-hover:opacity-100">
-                  <h2 className="text-base font-black text-[#315226]">{item.title}</h2>
-                  <p className="mt-1 text-sm text-[#304628]/75">
-                    Kavi Dall signature wellness atmosphere.
+                  <h2 className="text-base font-black text-[#ffffff]">{item.title}</h2>
+                  <p className="mt-1 text-sm text-[#ffffff]/75">
+                    New Golden Spa signature wellness atmosphere.
                   </p>
                 </div>
               </article>

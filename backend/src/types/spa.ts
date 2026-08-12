@@ -3,6 +3,7 @@ export type SpaService = {
   name: string;
   durationMinutes: number;
   price: number;
+  priceLabel?: string;
   mood: string;
 };
 

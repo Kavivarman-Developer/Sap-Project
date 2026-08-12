@@ -5,6 +5,7 @@ export type ServiceDocument = {
   name: string;
   durationMinutes: number;
   price: number;
+  priceLabel?: string;
   mood: string;
 };
 
@@ -14,10 +15,10 @@ const serviceSchema = new mongoose.Schema<ServiceDocument>(
     name: { type: String, required: true, trim: true },
     durationMinutes: { type: Number, required: true, min: 15 },
     price: { type: Number, required: true, min: 0 },
+    priceLabel: { type: String, trim: true },
     mood: { type: String, required: true, trim: true },
   },
   { timestamps: true },
 );
 
 export const ServiceModel = mongoose.model<ServiceDocument>('Service', serviceSchema);
-

@@ -113,6 +113,69 @@ export const listBookingsPage = async (options: {
   return { bookings: storedBookings.map(toApiBooking), pagination };
 };
 
+export const searchBookingsPage = async (options: {
+  query: string;
+  page: number;
+  pageSize: number;
+}) => {
+  const page = clampPage(options.page);
+  const pageSize = clampPageSize(options.pageSize);
+  const query = options.query.trim();
+
+  if (!query) {
+    const pagination: Pagination = {
+      page,
+      pageSize,
+      total: 0,
+      totalPages: 1,
+    };
+
+    return { bookings: [], pagination };
+  }
+
+  if (!isDatabaseConnected) {
+    const normalizedQuery = query.toLowerCase();
+    const filteredBookings = memoryBookings
+      .filter(
+        (booking) =>
+          booking.customerName.toLowerCase().includes(normalizedQuery) ||
+          booking.email.toLowerCase().includes(normalizedQuery) ||
+          booking.phone.includes(query),
+      )
+      .sort((first, second) => second.createdAt.localeCompare(first.createdAt));
+    const total = filteredBookings.length;
+    const bookings = filteredBookings.slice((page - 1) * pageSize, page * pageSize);
+    const pagination: Pagination = {
+      page,
+      pageSize,
+      total,
+      totalPages: Math.max(1, Math.ceil(total / pageSize)),
+    };
+
+    return { bookings, pagination };
+  }
+
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const searchRegex = new RegExp(escapedQuery, 'i');
+  const databaseQuery = {
+    $or: [{ customerName: searchRegex }, { email: searchRegex }, { phone: searchRegex }],
+  };
+  const total = await BookingModel.countDocuments(databaseQuery);
+  const storedBookings = await BookingModel.find(databaseQuery)
+    .sort({ createdAt: -1 })
+    .skip((page - 1) * pageSize)
+    .limit(pageSize)
+    .lean();
+  const pagination: Pagination = {
+    page,
+    pageSize,
+    total,
+    totalPages: Math.max(1, Math.ceil(total / pageSize)),
+  };
+
+  return { bookings: storedBookings.map(toApiBooking), pagination };
+};
+
 export const getBookingById = async (bookingId: string) => {
   if (!isDatabaseConnected) {
     return memoryBookings.find((booking) => booking.id === bookingId) ?? null;
@@ -166,6 +229,16 @@ export const listBookingsWithSummary = async (options: {
   pageSize: number;
 }) => {
   const bookingPage = await listBookingsPage(options);
+  const bookings = await Promise.all(bookingPage.bookings.map(withSummary));
+  return { bookings, pagination: bookingPage.pagination };
+};
+
+export const searchBookingsWithSummary = async (options: {
+  query: string;
+  page: number;
+  pageSize: number;
+}) => {
+  const bookingPage = await searchBookingsPage(options);
   const bookings = await Promise.all(bookingPage.bookings.map(withSummary));
   return { bookings, pagination: bookingPage.pagination };
 };

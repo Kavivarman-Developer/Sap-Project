@@ -1,0 +1,6 @@
+
+> backend@0.1.0 start
+> node dist/index.js
+
+◇ injected env (13) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+Kavi Dall spa API listening on port 5000

@@ -12,21 +12,23 @@ import {
   Mail,
   MessageCircle,
   Phone,
+  Search,
   Share2,
   ShieldCheck,
-  Sparkles,
   UserRound,
   UsersRound,
   X,
 } from 'lucide-react';
 import heroImage from './assets/spa-hero.png';
 import { Gallery } from './components/Gallery';
+import { ServicesSection } from './components/ServicesSection';
 
 type SpaService = {
   id: string;
   name: string;
   durationMinutes: number;
   price: number;
+  priceLabel?: string;
   mood: string;
 };
 
@@ -110,36 +112,105 @@ const defaultPagination: Pagination = {
 
 const fallbackServices: SpaService[] = [
   {
-    id: 'glow-facial',
-    name: 'Glow Facial',
-    durationMinutes: 45,
-    price: 2499,
-    mood: 'Brightening cleanse and facial massage',
+    id: 'thai-massage',
+    name: 'Thai Massage',
+    durationMinutes: 60,
+    price: 2000,
+    priceLabel: 'Rs. 2,000 - 5,000',
+    mood: 'Assisted stretching and pressure point relief',
   },
   {
     id: 'aroma-therapy',
-    name: 'Aroma Therapy',
+    name: 'Aromatherapy Massage',
     durationMinutes: 60,
-    price: 2999,
+    price: 2000,
+    priceLabel: 'Rs. 2,000 - 4,500',
     mood: 'Calming oils and gentle pressure',
   },
   {
-    id: 'hot-stone-ritual',
-    name: 'Hot Stone Ritual',
-    durationMinutes: 90,
-    price: 4499,
-    mood: 'Warm basalt stones for deep release',
+    id: 'swedish-massage',
+    name: 'Swedish Massage',
+    durationMinutes: 60,
+    price: 2000,
+    priceLabel: 'Rs. 2,000 - 4,500',
+    mood: 'Gentle full body care for deep relaxation',
   },
   {
-    id: 'couple-retreat',
-    name: 'Couple Retreat',
+    id: 'deep-tissue-massage',
+    name: 'Deep Tissue Massage',
+    durationMinutes: 75,
+    price: 2500,
+    priceLabel: 'Rs. 2,500 - 6,000',
+    mood: 'Focused pressure for tight muscles and stress',
+  },
+  {
+    id: 'balinese-massage',
+    name: 'Balinese Massage',
+    durationMinutes: 75,
+    price: 2500,
+    priceLabel: 'Rs. 2,500 - 5,500',
+    mood: 'Flowing strokes with calming traditional care',
+  },
+  {
+    id: 'body-scrub-therapy',
+    name: 'Body Scrub Therapy',
+    durationMinutes: 45,
+    price: 2000,
+    priceLabel: 'Rs. 2,000 - 4,000',
+    mood: 'Polishing exfoliation for soft refreshed skin',
+  },
+  {
+    id: 'foot-reflexology',
+    name: 'Foot Reflexology',
+    durationMinutes: 45,
+    price: 2500,
+    priceLabel: 'Rs. 2,500 - 5,000',
+    mood: 'Pressure point foot care to ease fatigue',
+  },
+  {
+    id: 'couples-therapy',
+    name: 'Couples Therapy',
     durationMinutes: 120,
-    price: 6999,
+    price: 4000,
+    priceLabel: 'Rs. 4,000 - 10,000',
     mood: 'Private suite with synchronized care',
+  },
+  {
+    id: 'facial-treatment',
+    name: 'Facial Treatment',
+    durationMinutes: 45,
+    price: 1500,
+    priceLabel: 'Rs. 1,500 - 3,000',
+    mood: 'Brightening cleanse and facial massage',
+  },
+  {
+    id: 'steam-sauna',
+    name: 'Steam & Sauna',
+    durationMinutes: 45,
+    price: 2000,
+    priceLabel: 'Rs. 2,000 - 4,500',
+    mood: 'Warm detox session for complete unwinding',
+  },
+  {
+    id: 'hot-stone-ritual',
+    name: 'Hot Stone Therapy',
+    durationMinutes: 90,
+    price: 3000,
+    priceLabel: 'Rs. 3,000 - 6,500',
+    mood: 'Warm basalt stones for deep release',
   },
 ];
 
 const defaultService = fallbackServices[0] as SpaService;
+
+const mergeWithFallbackServices = (apiServices: SpaService[]) => {
+  const apiServicesById = new Map(apiServices.map((service) => [service.id, service]));
+  return fallbackServices.map((fallbackService) => ({
+    ...fallbackService,
+    ...apiServicesById.get(fallbackService.id),
+    priceLabel: apiServicesById.get(fallbackService.id)?.priceLabel ?? fallbackService.priceLabel,
+  }));
+};
 
 const fallbackSlots: TimeSlot[] = [
   { id: '09-00', label: '09:00 AM', therapist: 'Maya', available: true },
@@ -151,8 +222,7 @@ const fallbackSlots: TimeSlot[] = [
 ];
 
 const defaultSlot = fallbackSlots[0] as TimeSlot;
-const viteEnv = import.meta.env as { readonly VITE_API_BASE_URL?: string };
-const apiBaseUrl = viteEnv.VITE_API_BASE_URL ?? 'http://127.0.0.1:5000';
+const apiBaseUrl = 'http://127.0.0.1:5000';
 const contactPhone = '9626847595';
 const contactEmail = 'priya06kavi04@gmail.com';
 const whatsappLink = `https://wa.me/91${contactPhone}`;
@@ -164,7 +234,7 @@ const normalizeWhatsappPhone = (phoneNumber: string) => {
 
 const buildAppointmentLetter = (booking: AdminBooking) =>
   [
-    'Kavi Dall Spa - Appointment Confirmation',
+    'New Golden Spa - Appointment Confirmation',
     '',
     `Booking ID: ${booking.id}`,
     `Customer: ${booking.customerName}`,
@@ -234,15 +304,21 @@ export function App() {
   const [isBooking, setIsBooking] = useState(false);
   const [message, setMessage] = useState('');
   const [confirmation, setConfirmation] = useState<BookingResponse | null>(null);
-  const [adminEmail, setAdminEmail] = useState(contactEmail);
+  const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
-  const [adminToken, setAdminToken] = useState(() => localStorage.getItem('kavi-admin-token') ?? '');
-  const [adminTab, setAdminTab] = useState<'appointments' | 'leads'>('appointments');
+  const [adminToken, setAdminToken] = useState(
+    () => localStorage.getItem('kavi-admin-token') ?? '',
+  );
+  const [adminTab, setAdminTab] = useState<'appointments' | 'leads' | 'history'>('appointments');
   const [adminBookings, setAdminBookings] = useState<AdminBooking[]>([]);
   const [adminLeads, setAdminLeads] = useState<AdminLead[]>([]);
+  const [historyBookings, setHistoryBookings] = useState<AdminBooking[]>([]);
   const [bookingPagination, setBookingPagination] = useState<Pagination>(defaultPagination);
   const [leadPagination, setLeadPagination] = useState<Pagination>(defaultPagination);
+  const [historyPagination, setHistoryPagination] = useState<Pagination>(defaultPagination);
   const [bookingFilterDate, setBookingFilterDate] = useState('');
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyQuery, setHistoryQuery] = useState('');
   const [adminMessage, setAdminMessage] = useState('');
   const [isAdminLoading, setIsAdminLoading] = useState(false);
   const [confirmingBookingId, setConfirmingBookingId] = useState('');
@@ -277,7 +353,8 @@ export function App() {
       try {
         const response = await fetch(`${apiBaseUrl}/api/services`);
         const data = (await response.json()) as { services: SpaService[] };
-        const nextServices = data.services.length > 0 ? data.services : fallbackServices;
+        const nextServices =
+          data.services.length > 0 ? mergeWithFallbackServices(data.services) : fallbackServices;
         setServices(nextServices);
         setSelectedServiceId(nextServices[0]?.id ?? defaultService.id);
       } catch {
@@ -474,6 +551,56 @@ export function App() {
     }
   };
 
+  const loadBookingHistory = async (
+    token = adminToken,
+    page = historyPagination.page,
+    query = historyQuery || historySearch,
+  ) => {
+    if (!token || !query.trim()) {
+      setHistoryBookings([]);
+      setHistoryPagination(defaultPagination);
+      return;
+    }
+
+    setIsAdminLoading(true);
+    setAdminMessage('');
+
+    try {
+      const params = new URLSearchParams({
+        query: query.trim(),
+        page: String(page),
+        pageSize: String(historyPagination.pageSize),
+      });
+      const response = await fetch(`${apiBaseUrl}/api/bookings/history?${params.toString()}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = (await response.json()) as {
+        bookings: AdminBooking[];
+        pagination: Pagination;
+        message?: string;
+      };
+
+      if (!response.ok) {
+        setAdminMessage(data.message ?? 'Unable to load customer history.');
+        showToast(data.message ?? 'Unable to load customer history.', 'error');
+        return;
+      }
+
+      setHistoryBookings(data.bookings);
+      setHistoryPagination(data.pagination);
+      setHistoryQuery(query.trim());
+      showToast(
+        data.pagination.total > 0 ? 'Customer history loaded.' : 'No matching history found.',
+        'info',
+      );
+    } catch {
+      setAdminMessage('Backend is not reachable. Start backend server and try again.');
+      showToast('Backend is not reachable. Start backend server and try again.', 'error');
+    } finally {
+      setIsAdminLoading(false);
+    }
+  };
+
   const handleAdminLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsAdminLoading(true);
@@ -512,10 +639,14 @@ export function App() {
     setAdminToken('');
     setAdminBookings([]);
     setAdminLeads([]);
+    setHistoryBookings([]);
     setBookingPagination(defaultPagination);
     setLeadPagination(defaultPagination);
+    setHistoryPagination(defaultPagination);
     setAdminPassword('');
     setAdminMessage('');
+    setHistorySearch('');
+    setHistoryQuery('');
     showToast('Admin logged out.', 'info');
   };
 
@@ -551,7 +682,10 @@ export function App() {
 
   const handleBookingFilter = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    showToast(bookingFilterDate ? 'Date filter applied.' : 'Showing all appointment dates.', 'info');
+    showToast(
+      bookingFilterDate ? 'Date filter applied.' : 'Showing all appointment dates.',
+      'info',
+    );
     void loadAdminBookings(adminToken, 1, bookingFilterDate);
   };
 
@@ -569,6 +703,15 @@ export function App() {
     void loadAdminLeads(adminToken, page);
   };
 
+  const handleHistorySearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void loadBookingHistory(adminToken, 1, historySearch);
+  };
+
+  const changeHistoryPage = (page: number) => {
+    void loadBookingHistory(adminToken, page, historyQuery);
+  };
+
   const shareAppointmentOnWhatsapp = (booking: AdminBooking) => {
     window.open(getAppointmentShareUrl(booking), '_blank', 'noopener,noreferrer');
     showToast('WhatsApp share opened with the appointment letter.', 'success');
@@ -578,7 +721,7 @@ export function App() {
     if (activeView === 'admin' && adminToken) {
       if (adminTab === 'appointments') {
         void loadAdminBookings();
-      } else {
+      } else if (adminTab === 'leads') {
         void loadAdminLeads();
       }
     }
@@ -595,12 +738,19 @@ export function App() {
         <nav className="sticky top-0 z-30 border-b border-[#A5CF83]/30 bg-[#FBFFF7]/92 backdrop-blur-xl">
           <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-5">
             <button
-              className="flex items-center gap-2 font-display text-2xl font-semibold"
+              className="flex items-center gap-3"
               onClick={openHome}
               type="button"
             >
-              <Leaf className="h-6 w-6 text-[#A5CF83]" />
-              Kavi Dall
+              <Leaf className="h-8 w-8 text-[#A5CF83]" />
+              <span className="text-left">
+                <span className="block font-display text-2xl font-semibold leading-none">
+                  New Golden Spa
+                </span>
+                <span className="mt-1 block text-[10px] font-medium uppercase tracking-[0.32em] text-[#5F8E43]">
+                  Luxury Spa
+                </span>
+              </span>
             </button>
             {adminToken ? (
               <button
@@ -628,7 +778,8 @@ export function App() {
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-[#304628]/75">
                   Login, review customer bookings, and confirm appointments. Confirmation triggers
-                  email and WhatsApp notification from the backend when provider keys are configured.
+                  email and WhatsApp notification from the backend when provider keys are
+                  configured.
                 </p>
               </div>
               {adminToken ? (
@@ -707,6 +858,18 @@ export function App() {
                   >
                     <UsersRound className="h-4 w-4" />
                     Leads
+                  </button>
+                  <button
+                    className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-black uppercase ${
+                      adminTab === 'history'
+                        ? 'bg-[#A5CF83] text-[#10240c]'
+                        : 'border border-[#A5CF83]/35 bg-white text-[#304628]'
+                    }`}
+                    onClick={() => setAdminTab('history')}
+                    type="button"
+                  >
+                    <Search className="h-4 w-4" />
+                    History
                   </button>
                 </div>
 
@@ -839,7 +1002,7 @@ export function App() {
                       </button>
                     </div>
                   </>
-                ) : (
+                ) : adminTab === 'leads' ? (
                   <>
                     <div className="mt-5 rounded-lg border border-[#A5CF83]/25 bg-white/88 p-4">
                       <p className="text-xs font-semibold text-[#304628]/65">
@@ -904,6 +1067,112 @@ export function App() {
                       </button>
                     </div>
                   </>
+                ) : (
+                  <>
+                    <form
+                      className="mt-5 flex flex-col gap-3 rounded-lg border border-[#A5CF83]/25 bg-white/88 p-4 sm:flex-row sm:items-end"
+                      onSubmit={handleHistorySearch}
+                    >
+                      <label className="flex-1 text-xs font-bold text-[#263a20]">
+                        Search Customer History
+                        <input
+                          className="mt-2 w-full rounded-md border border-[#A5CF83]/50 bg-[#F8FFF3] px-4 py-3 text-sm outline-none focus:border-[#5F8E43] focus:ring-2 focus:ring-[#A5CF83]/30"
+                          onChange={(event) => setHistorySearch(event.target.value)}
+                          placeholder="Enter name, email, or phone number"
+                          value={historySearch}
+                        />
+                      </label>
+                      <button
+                        className="flex items-center justify-center gap-2 rounded-full bg-[#A5CF83] px-5 py-3 text-xs font-black uppercase text-[#10240c] disabled:cursor-wait disabled:opacity-70"
+                        disabled={isAdminLoading}
+                        type="submit"
+                      >
+                        <Search className="h-4 w-4" />
+                        Search
+                      </button>
+                    </form>
+
+                    <div className="mt-5 rounded-lg border border-[#A5CF83]/25 bg-white/88 p-4">
+                      <p className="text-xs font-semibold text-[#304628]/65">
+                        {historyQuery
+                          ? `${historyPagination.total} history records found for "${historyQuery}"`
+                          : 'Search by customer name, email, or phone number to view booking history'}
+                      </p>
+                    </div>
+
+                    <div className="mt-5 overflow-hidden rounded-lg border border-[#A5CF83]/25 bg-white/92 shadow-[0_24px_70px_rgba(95,142,67,0.14)]">
+                      <div className="grid gap-4 border-b border-[#A5CF83]/20 bg-[#F2FBEA] px-4 py-3 text-xs font-black uppercase text-[#5F8E43] md:grid-cols-[1.1fr_1fr_1fr_0.8fr]">
+                        <span>Customer</span>
+                        <span>Booking History</span>
+                        <span>Contact</span>
+                        <span>Status</span>
+                      </div>
+                      {historyBookings.length === 0 ? (
+                        <p className="p-5 text-sm text-[#304628]/70">
+                          {isAdminLoading
+                            ? 'Loading history...'
+                            : 'No history records to show yet.'}
+                        </p>
+                      ) : (
+                        historyBookings.map((booking) => (
+                          <article
+                            className="grid gap-4 border-b border-[#A5CF83]/15 px-4 py-4 text-sm last:border-b-0 md:grid-cols-[1.1fr_1fr_1fr_0.8fr]"
+                            key={booking.id}
+                          >
+                            <div>
+                              <p className="font-black text-[#263a20]">{booking.customerName}</p>
+                              <p className="mt-1 text-xs text-[#304628]/65">{booking.id}</p>
+                            </div>
+                            <div>
+                              <p className="font-bold text-[#263a20]">
+                                {booking.summary.serviceName}
+                              </p>
+                              <p className="mt-1 text-xs text-[#304628]/65">
+                                {booking.date} at {booking.summary.slotLabel}
+                              </p>
+                            </div>
+                            <div className="break-words text-xs leading-5 text-[#304628]/75">
+                              <p>{booking.phone}</p>
+                              <p>{booking.email}</p>
+                            </div>
+                            <span
+                              className={`h-fit w-fit rounded-full px-3 py-1 text-xs font-black uppercase ${
+                                booking.status === 'confirmed'
+                                  ? 'bg-[#A5CF83]/25 text-[#315226]'
+                                  : 'bg-[#fff7d6] text-[#765600]'
+                              }`}
+                            >
+                              {booking.status}
+                            </span>
+                          </article>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-[#A5CF83]/25 bg-white/82 p-3 text-sm text-[#304628]">
+                      <button
+                        className="flex items-center gap-1 rounded-full border border-[#A5CF83]/40 px-3 py-2 font-bold disabled:opacity-40"
+                        disabled={historyPagination.page <= 1}
+                        onClick={() => changeHistoryPage(historyPagination.page - 1)}
+                        type="button"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Prev
+                      </button>
+                      <span className="text-xs font-black uppercase">
+                        Page {historyPagination.page} of {historyPagination.totalPages}
+                      </span>
+                      <button
+                        className="flex items-center gap-1 rounded-full border border-[#A5CF83]/40 px-3 py-2 font-bold disabled:opacity-40"
+                        disabled={historyPagination.page >= historyPagination.totalPages}
+                        onClick={() => changeHistoryPage(historyPagination.page + 1)}
+                        type="button"
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
             )}
@@ -931,7 +1200,7 @@ export function App() {
           >
             <Leaf className="h-6 w-6 text-[#A5CF83]" />
             <span>
-              Kavi Dall
+              New Golden Spa
               <span className="block text-[10px] font-medium uppercase tracking-[0.32em] text-[#5F8E43]">
                 Luxury Spa
               </span>
@@ -945,10 +1214,7 @@ export function App() {
               Services
             </a>
             <button className="hover:text-[#A5CF83]" onClick={openGallery} type="button">
-              Gallery
-            </button>
-            <button className="hover:text-[#A5CF83]" onClick={openAdmin} type="button">
-              Admin
+              GALLERY
             </button>
             <a className="hover:text-[#A5CF83]" href="#booking">
               Booking
@@ -957,12 +1223,22 @@ export function App() {
               Contact
             </a>
           </div>
-          <a
-            className="hidden rounded-full bg-gradient-to-r from-[#A5CF83] via-[#CFEAB7] to-[#F0FFE6] px-5 py-2.5 text-xs font-black uppercase text-[#10240c] shadow-[0_14px_35px_rgba(165,207,131,0.28)] transition hover:brightness-110 sm:inline-flex"
-            href="#booking"
-          >
-            Book Now
-          </a>
+          <div className="hidden items-center gap-2 sm:flex">
+            <button
+              className="inline-flex items-center gap-2 rounded-full border border-[#A5CF83]/45 bg-white/80 px-4 py-2.5 text-xs font-black uppercase text-[#304628] shadow-[0_12px_28px_rgba(95,142,67,0.12)] transition hover:bg-[#F2FBEA]"
+              onClick={openAdmin}
+              type="button"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              Admin Login
+            </button>
+            <a
+              className="rounded-full bg-gradient-to-r from-[#A5CF83] via-[#CFEAB7] to-[#F0FFE6] px-5 py-2.5 text-xs font-black uppercase text-[#10240c] shadow-[0_14px_35px_rgba(165,207,131,0.28)] transition hover:brightness-110"
+              href="#booking"
+            >
+              Book Now
+            </a>
+          </div>
           <button
             aria-expanded={isMobileMenuOpen}
             aria-label="Open navigation menu"
@@ -1073,41 +1349,11 @@ export function App() {
         </div>
       </section>
 
-      <section className="bg-[linear-gradient(180deg,#F8FFF3_0%,#EEF8E8_100%)] py-16" id="services">
-        <div className="mx-auto max-w-7xl px-5">
-          <div className="text-center">
-            <p className="text-xs font-black uppercase tracking-[0.38em] text-[#5F8E43]">
-              Our services
-            </p>
-            <h2 className="mt-3 font-display text-4xl font-semibold">Choose your ritual</h2>
-          </div>
-
-          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {services.map((service) => (
-              <button
-                className={`rounded-lg border p-5 text-left transition hover:-translate-y-1 ${
-                  selectedServiceId === service.id
-                    ? 'border-[#F0FFE6] bg-gradient-to-br from-[#A5CF83] via-[#CFEAB7] to-[#F0FFE6] text-[#10240c] shadow-[0_24px_60px_rgba(165,207,131,0.24)]'
-                    : 'border-[#A5CF83]/30 bg-white text-[#263a20] shadow-[0_18px_48px_rgba(95,142,67,0.1)] hover:border-[#A5CF83]/70'
-                }`}
-                key={service.id}
-                onClick={() => setSelectedServiceId(service.id)}
-                type="button"
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f4fff0] text-[#1f4a19]">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <h3 className="mt-5 text-lg font-bold">{service.name}</h3>
-                <p className="mt-2 min-h-10 text-sm opacity-75">{service.mood}</p>
-                <div className="mt-5 flex items-center justify-between text-sm font-black">
-                  <span>{service.durationMinutes} min</span>
-                  <span>{formatPrice(service.price)}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
+      <ServicesSection
+        onSelectService={setSelectedServiceId}
+        selectedServiceId={selectedServiceId}
+        services={services}
+      />
 
       <section
         className="bg-[radial-gradient(circle_at_18%_10%,rgba(165,207,131,0.24),transparent_30%),radial-gradient(circle_at_84%_20%,rgba(255,255,255,0.8),transparent_28%),linear-gradient(135deg,#F8FFF3_0%,#EAF6DF_52%,#DCEFCF_100%)] py-16 sm:py-20"
@@ -1200,7 +1446,7 @@ export function App() {
                 >
                   {services.map((service) => (
                     <option key={service.id} value={service.id}>
-                      {service.name}
+                      {service.name} - {service.priceLabel ?? formatPrice(service.price)}
                     </option>
                   ))}
                 </select>
@@ -1343,7 +1589,7 @@ export function App() {
                 <p className="text-xs font-black uppercase tracking-[0.38em] text-[#5F8E43]">
                   Contact info
                 </p>
-                <h3 className="mt-3 font-display text-3xl font-semibold">Kavi Dall Spa</h3>
+                <h3 className="mt-3 font-display text-3xl font-semibold">New Golden Spa</h3>
                 <p className="mt-4 flex items-start gap-3 text-sm leading-6 text-[#304628]/75">
                   <MapPin className="mt-1 h-4 w-4 shrink-0 text-[#5F8E43]" />
                   48, Thiru Nagar Street, Puducherry
@@ -1384,7 +1630,7 @@ export function App() {
 
       <footer className="border-t border-[#A5CF83]/25 bg-[#FBFFF7] py-8">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-5 text-sm text-[#304628]/65 md:flex-row md:items-center md:justify-between">
-          <p className="font-display text-2xl font-semibold text-[#A5CF83]">Kavi Dall</p>
+          <p className="font-display text-2xl font-semibold text-[#A5CF83]">New Golden Spa</p>
           <p>Booking and slot management only. No login required.</p>
         </div>
       </footer>

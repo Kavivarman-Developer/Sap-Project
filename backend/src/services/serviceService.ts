@@ -8,6 +8,7 @@ const toApiService = (service: ServiceDocument): SpaService => ({
   name: service.name,
   durationMinutes: service.durationMinutes,
   price: service.price,
+  priceLabel: service.priceLabel,
   mood: service.mood,
 });
 
@@ -16,7 +17,16 @@ export const getServices = async () => {
     return services;
   }
 
-  const storedServices = await ServiceModel.find().sort({ price: 1 }).lean();
+  const serviceOrder = new Map(services.map((service, index) => [service.id, index]));
+  const storedServices = await ServiceModel.find({ slug: { $in: services.map((service) => service.id) } })
+    .lean()
+    .then((items) =>
+      items.sort(
+        (first, second) =>
+          (serviceOrder.get(first.slug) ?? Number.MAX_SAFE_INTEGER) -
+          (serviceOrder.get(second.slug) ?? Number.MAX_SAFE_INTEGER),
+      ),
+    );
+
   return storedServices.map(toApiService);
 };
-

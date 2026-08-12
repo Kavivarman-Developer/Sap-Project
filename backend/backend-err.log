@@ -1,0 +1,7 @@
+MongoDB connection failed. Falling back to in-memory storage. Error: querySrv ETIMEOUT _mongodb._tcp.cluster0.aylkbie.mongodb.net
+    at QueryReqWrap.onresolve [as oncomplete] (node:internal/dns/promises:294:17) {
+  errno: undefined,
+  code: 'ETIMEOUT',
+  syscall: 'querySrv',
+  hostname: '_mongodb._tcp.cluster0.aylkbie.mongodb.net'
+}

@@ -1,11 +1,12 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
-import { timeSlots } from '../data/spaData.js';
+import { services, timeSlots } from '../data/spaData.js';
 import {
   confirmBooking,
   isSlotBooked,
   listBookingsWithSummary,
   saveBooking,
+  searchBookingsWithSummary,
   withSummary,
 } from '../services/bookingService.js';
 import { sendConfirmationNotifications } from '../services/notificationService.js';
@@ -36,6 +37,20 @@ export const listBookings = async (request: Request, response: Response) => {
   response.status(200).json(result);
 };
 
+export const searchBookingHistory = async (request: Request, response: Response) => {
+  const query = typeof request.query.query === 'string' ? request.query.query : '';
+  const page = getPositiveNumber(request.query.page, 1);
+  const pageSize = getPositiveNumber(request.query.pageSize, 10);
+
+  if (!query.trim()) {
+    response.status(400).json({ message: 'Enter a name, email, or phone number to search.' });
+    return;
+  }
+
+  const result = await searchBookingsWithSummary({ query, page, pageSize });
+  response.status(200).json(result);
+};
+
 export const createBooking = async (request: Request, response: Response) => {
   const result = bookingSchema.safeParse(request.body);
 
@@ -45,7 +60,9 @@ export const createBooking = async (request: Request, response: Response) => {
   }
 
   const availableServices = await getServices();
-  const service = availableServices.find((item) => item.id === result.data.serviceId);
+  const service =
+    availableServices.find((item) => item.id === result.data.serviceId) ??
+    services.find((item) => item.id === result.data.serviceId);
   const slot = timeSlots.find((item) => item.id === result.data.slotId);
 
   if (!service || !slot) {
