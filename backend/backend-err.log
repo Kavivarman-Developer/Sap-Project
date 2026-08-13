@@ -5,3 +5,28 @@ MongoDB connection failed. Falling back to in-memory storage. Error: querySrv ET
   syscall: 'querySrv',
   hostname: '_mongodb._tcp.cluster0.aylkbie.mongodb.net'
 }
+
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+Error [TransformError]: Transform failed with 1 error:
+C:\Spa-Project\backend\src\index.ts:14:2: ERROR: Unexpected "}"
+    at failureErrorWithLog (C:\Spa-Project\node_modules\esbuild\lib\main.js:1748:15)
+    at C:\Spa-Project\node_modules\esbuild\lib\main.js:1017:50
+    at responseCallbacks.<computed> (C:\Spa-Project\node_modules\esbuild\lib\main.js:884:9)
+    at handleIncomingPacket (C:\Spa-Project\node_modules\esbuild\lib\main.js:939:12)
+    at Socket.readFromStdout (C:\Spa-Project\node_modules\esbuild\lib\main.js:862:7)
+    at Socket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
+
+Node.js v22.15.1
+MongoDB connection failed. Falling back to in-memory storage. Error: querySrv ETIMEOUT _mongodb._tcp.cluster0.aylkbie.mongodb.net
+    at QueryReqWrap.onresolve [as oncomplete] (node:internal/dns/promises:294:17) {
+  errno: undefined,
+  code: 'ETIMEOUT',
+  syscall: 'querySrv',
+  hostname: '_mongodb._tcp.cluster0.aylkbie.mongodb.net'
+}

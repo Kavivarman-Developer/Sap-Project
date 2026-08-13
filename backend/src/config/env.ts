@@ -2,10 +2,22 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const defaultClientOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+];
+
+const clientOrigins = (process.env.CLIENT_ORIGIN ?? defaultClientOrigins.join(','))
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: Number(process.env.PORT ?? 5000),
-  clientOrigin: process.env.CLIENT_ORIGIN ?? 'http://localhost:5173',
+  clientOrigins,
   mongoUri: process.env.MONGODB_URI,
   mongoDbName: process.env.MONGODB_DB_NAME ?? 'kavi-dall-spa',
   adminEmail: process.env.ADMIN_EMAIL ?? 'priya06kavi04@gmail.com',

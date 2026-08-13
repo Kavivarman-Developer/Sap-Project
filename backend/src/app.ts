@@ -16,7 +16,7 @@ export const createApp = () => {
   const app = express();
 
   app.use(helmet());
-  app.use(cors({ origin: env.clientOrigin }));
+  app.use(cors({ origin: env.clientOrigins }));
   app.use(compression());
   app.use(express.json({ limit: '1mb' }));
   app.use(morgan(env.nodeEnv === 'production' ? 'combined' : 'dev'));

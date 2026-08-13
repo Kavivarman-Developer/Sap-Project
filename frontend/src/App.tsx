@@ -285,8 +285,31 @@ const getDateOptions = () =>
     };
   });
 
+function PageLoader() {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#F8FFF3] text-[#162312]">
+      <div className="flex flex-col items-center gap-5">
+        <div className="relative flex h-24 w-24 items-center justify-center">
+          <div className="absolute inset-0 rounded-full border-4 border-[#D8EDC5]" />
+          <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#A5CF83] border-r-[#D09D2F] animate-spin" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-[0_18px_40px_rgba(95,142,67,0.16)]">
+            <Leaf className="h-7 w-7 text-[#5F8E43]" />
+          </div>
+        </div>
+        <div className="text-center">
+          <p className="font-display text-3xl font-semibold text-[#A5CF83]">New Golden Spa</p>
+          <p className="mt-2 text-xs font-black uppercase tracking-[0.36em] text-[#5F8E43]">
+            Loading
+          </p>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 export function App() {
   const [activeView, setActiveView] = useState<'home' | 'gallery' | 'admin'>('home');
+  const [isPageLoading, setIsPageLoading] = useState(true);
   const dateOptions = useMemo(() => getDateOptions(), []);
   const defaultDate = dateOptions[0];
   const [services, setServices] = useState<SpaService[]>(fallbackServices);
@@ -325,6 +348,12 @@ export function App() {
   const [toast, setToast] = useState<Toast | null>(null);
 
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId);
+
+  useEffect(() => {
+    const loaderTimer = window.setTimeout(() => setIsPageLoading(false), 950);
+
+    return () => window.clearTimeout(loaderTimer);
+  }, []);
 
   const showToast = (message: string, type: Toast['type'] = 'success') => {
     setToast({ message, type });
@@ -726,6 +755,10 @@ export function App() {
       }
     }
   }, [activeView, adminToken, adminTab]);
+
+  if (isPageLoading) {
+    return <PageLoader />;
+  }
 
   if (activeView === 'gallery') {
     return <Gallery onBack={openHome} />;

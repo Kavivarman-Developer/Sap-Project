@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { ArrowRight, Clock3, Phone } from 'lucide-react';
+import spa1 from '../assets/spa1.jpg';
+import spa4 from '../assets/spa4.jpg';
+import spa5 from '../assets/spa5.jpg';
+import spa6 from '../assets/spa6.jpg';
+import spa8 from '../assets/spa8.jpg';
+import spa9 from '../assets/spa9.jpg';
+import spa10 from '../assets/spa10.jpg';
+import spa11 from '../assets/spa11.jpg';
+import spa12 from '../assets/spa12.jpg';
+import spa13 from '../assets/spa13.jpg';
+import spa14 from '../assets/spa14.jpg';
 
 export type ServiceCard = {
   id: string;
@@ -15,6 +26,22 @@ type ServicesSectionProps = {
   selectedServiceId: string;
   onSelectService: (serviceId: string) => void;
 };
+
+const serviceImages: Record<string, { image: string; position: string }> = {
+  'thai-massage': { image: spa1, position: 'object-left-top' },
+  'aroma-therapy': { image: spa4, position: 'object-center' },
+  'swedish-massage': { image: spa5, position: 'object-right-top' },
+  'deep-tissue-massage': { image: spa6, position: 'object-center' },
+  'balinese-massage': { image: spa8, position: 'object-top' },
+  'body-scrub-therapy': { image: spa9, position: 'object-bottom' },
+  'foot-reflexology': { image: spa10, position: 'object-left' },
+  'couples-therapy': { image: spa11, position: 'object-right' },
+  'facial-treatment': { image: spa12, position: 'object-bottom' },
+  'steam-sauna': { image: spa13, position: 'object-left' },
+  'hot-stone-ritual': { image: spa14, position: 'object-center' },
+};
+
+const contactPhone = '9626847595';
 
 const formatPrice = (price: number) =>
   new Intl.NumberFormat('en-IN', {
@@ -50,7 +77,7 @@ export function ServicesSection({
           </p>
         </div>
 
-        <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {visibleServices.map((service) => (
             <ServiceButton
               isSelected={selectedServiceId === service.id}
@@ -84,25 +111,67 @@ type ServiceButtonProps = {
 };
 
 function ServiceButton({ service, isSelected, onSelectService }: ServiceButtonProps) {
+  const serviceImage = serviceImages[service.id] ?? serviceImages['thai-massage'];
+  const selectService = () => onSelectService(service.id);
+
   return (
-    <button
-      className={`rounded-lg border p-5 text-left transition hover:-translate-y-1 ${
+    <article
+      className={`group overflow-hidden rounded-lg border text-left transition hover:-translate-y-1 ${
         isSelected
-          ? 'border-[#F0FFE6] bg-gradient-to-br from-[#A5CF83] via-[#CFEAB7] to-[#F0FFE6] text-[#10240c] shadow-[0_24px_60px_rgba(165,207,131,0.24)]'
-          : 'border-[#A5CF83]/30 bg-white text-[#263a20] shadow-[0_18px_48px_rgba(95,142,67,0.1)] hover:border-[#A5CF83]/70'
+          ? 'border-[#A5CF83] bg-white text-[#10240c] shadow-[0_26px_70px_rgba(165,207,131,0.28)] ring-2 ring-[#A5CF83]/28'
+          : 'border-[#A5CF83]/24 bg-white text-[#263a20] shadow-[0_18px_48px_rgba(95,142,67,0.1)] hover:border-[#A5CF83]/70'
       }`}
-      onClick={() => onSelectService(service.id)}
-      type="button"
+      onClick={selectService}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          selectService();
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#f4fff0] text-[#1f4a19]">
-        <Sparkles className="h-5 w-5" />
+      <div className="relative aspect-[16/9] overflow-hidden bg-[#263a20]">
+        <img
+          alt={service.name}
+          className={`h-full w-full ${serviceImage?.position ?? 'object-center'} object-cover transition duration-700 group-hover:scale-105`}
+          src={serviceImage?.image}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#1d1308]/10 via-transparent to-[#1d1308]/50" />
       </div>
-      <h3 className="mt-5 text-lg font-bold">{service.name}</h3>
-      <p className="mt-2 min-h-10 text-sm opacity-75">{service.mood}</p>
-      <div className="mt-5 flex items-center justify-between gap-4 text-sm font-black">
-        <span>{service.durationMinutes} min</span>
-        <span>{service.priceLabel ?? formatPrice(service.price)}</span>
+      <div className="p-5 sm:p-6">
+        <h3 className="text-xl font-black">{service.name}</h3>
+        <p className="mt-3 min-h-12 text-sm leading-6 text-[#304628]/72">{service.mood}</p>
+        <p className="mt-4 inline-flex rounded-full bg-[#F8FFF3] px-4 py-2 text-sm font-black text-[#5F8E43] ring-1 ring-[#A5CF83]/30">
+          {service.priceLabel ?? formatPrice(service.price)}
+        </p>
+        <div className="mt-7 flex flex-wrap items-center justify-between gap-3 text-sm font-black">
+          <span className="inline-flex items-center gap-2 text-[#304628]/80">
+            <Clock3 className="h-4 w-4 text-[#D09D2F]" />
+            {service.durationMinutes} min
+          </span>
+          <a
+            className="inline-flex items-center gap-2 rounded-full border border-[#E5C77E] bg-[#FFF9EC] px-4 py-2 text-[#C9972D] transition hover:bg-[#FFF3D5]"
+            href={`tel:+91${contactPhone}`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <Phone className="h-4 w-4" />
+            Call Now
+          </a>
+          <button
+            className="inline-flex items-center gap-1 text-[#263a20] transition hover:text-[#5F8E43]"
+            onClick={(event) => {
+              event.stopPropagation();
+              selectService();
+              window.location.hash = 'booking';
+            }}
+            type="button"
+          >
+            Details
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
-    </button>
+    </article>
   );
 }
